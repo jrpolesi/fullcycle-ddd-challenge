@@ -12,49 +12,6 @@ import OrderItemModel from "./order-item.model";
 import OrderModel from "./order.model";
 import OrderRepository from "./order.repository";
 
-async function createOrder(suffixCounter: number) {
-  const customerRepository = new CustomerRepository();
-
-  const customer = new Customer(
-    `c-${suffixCounter}`,
-    `Customer ${suffixCounter}`
-  );
-  const address = new Address(
-    `Street ${suffixCounter}`,
-    suffixCounter,
-    `ZipCode ${suffixCounter}`,
-    `City ${suffixCounter}`
-  );
-  customer.changeAddress(address);
-
-  await customerRepository.create(customer);
-
-  const productRepository = new ProductRepository();
-
-  const product = new Product(
-    `p-${suffixCounter}`,
-    `Product ${suffixCounter}`,
-    10 * suffixCounter
-  );
-  await productRepository.create(product);
-
-  const orderItem = new OrderItem(
-    `o_i-${suffixCounter}`,
-    product.name,
-    product.price,
-    product.id,
-    2 * suffixCounter
-  );
-
-  const order = new Order(`o-${suffixCounter}`, customer.id, [orderItem]);
-
-  return {
-    order,
-    orderItem,
-    customer,
-  };
-}
-
 describe("Order repository test", () => {
   let sequelize: Sequelize;
 
@@ -132,4 +89,69 @@ describe("Order repository test", () => {
 
     expect(foundOrder).toStrictEqual(order);
   });
+
+  it("should update an order", async () => {
+    const { order } = await createOrder(1);
+
+    const orderRepository = new OrderRepository();
+    await orderRepository.create(order);
+
+    const { orderItem } = await createOrderItem(2);
+    order.addItem(orderItem);
+
+    await orderRepository.update(order);
+
+    const foundOrder = await orderRepository.find(order.id);
+    expect(foundOrder).toStrictEqual(order);
+    expect(foundOrder.total()).toBe(100);
+  });
 });
+
+async function createOrderItem(suffixCounter: number) {
+  const productRepository = new ProductRepository();
+
+  const product = new Product(
+    `p-${suffixCounter}`,
+    `Product ${suffixCounter}`,
+    10 * suffixCounter
+  );
+  await productRepository.create(product);
+
+  const orderItem = new OrderItem(
+    `o_i-${suffixCounter}`,
+    product.name,
+    product.price,
+    product.id,
+    2 * suffixCounter
+  );
+
+  return { orderItem, product };
+}
+
+async function createOrder(suffixCounter: number) {
+  const customerRepository = new CustomerRepository();
+
+  const customer = new Customer(
+    `c-${suffixCounter}`,
+    `Customer ${suffixCounter}`
+  );
+  const address = new Address(
+    `Street ${suffixCounter}`,
+    suffixCounter,
+    `ZipCode ${suffixCounter}`,
+    `City ${suffixCounter}`
+  );
+  customer.changeAddress(address);
+
+  await customerRepository.create(customer);
+
+  const { orderItem } = await createOrderItem(suffixCounter);
+
+  const order = new Order(`o-${suffixCounter}`, customer.id, [orderItem]);
+
+  return {
+    order,
+    orderItem,
+    customer,
+  };
+}
