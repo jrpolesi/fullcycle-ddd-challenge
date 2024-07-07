@@ -12,6 +12,35 @@ import OrderItemModel from "./order-item.model";
 import OrderModel from "./order.model";
 import OrderRepository from "./order.repository";
 
+async function createOrder() {
+  const customerRepository = new CustomerRepository();
+  const customer = new Customer("c1", "Customer 1");
+  const address = new Address("Street 1", 1, "Zipcode 1", "City 1");
+  customer.changeAddress(address);
+
+  await customerRepository.create(customer);
+
+  const productRepository = new ProductRepository();
+  const product = new Product("p1", "Product 1", 10);
+  await productRepository.create(product);
+
+  const orderItem = new OrderItem(
+    "1",
+    product.name,
+    product.price,
+    product.id,
+    2
+  );
+
+  const order = new Order("o1", customer.id, [orderItem]);
+
+  return {
+    order,
+    orderItem,
+    customer,
+  };
+}
+
 describe("Order repository test", () => {
   let sequelize: Sequelize;
 
@@ -37,25 +66,7 @@ describe("Order repository test", () => {
   });
 
   it("should create a new order", async () => {
-    const customerRepository = new CustomerRepository();
-    const customer = new Customer("123", "Customer 1");
-    const address = new Address("Street 1", 1, "Zipcode 1", "City 1");
-    customer.changeAddress(address);
-    await customerRepository.create(customer);
-
-    const productRepository = new ProductRepository();
-    const product = new Product("123", "Product 1", 10);
-    await productRepository.create(product);
-
-    const orderItem = new OrderItem(
-      "1",
-      product.name,
-      product.price,
-      product.id,
-      2
-    );
-
-    const order = new Order("123", "123", [orderItem]);
+    const { order, orderItem } = await createOrder();
 
     const orderRepository = new OrderRepository();
     await orderRepository.create(order);
@@ -80,5 +91,16 @@ describe("Order repository test", () => {
         },
       ],
     });
+  });
+
+  it("should find an order", async () => {
+    const { order } = await createOrder();
+
+    const orderRepository = new OrderRepository();
+    await orderRepository.create(order);
+
+    const foundOrder = await orderRepository.find(order.id);
+
+    expect(foundOrder).toStrictEqual(order);
   });
 });
