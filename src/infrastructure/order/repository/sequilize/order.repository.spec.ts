@@ -12,27 +12,41 @@ import OrderItemModel from "./order-item.model";
 import OrderModel from "./order.model";
 import OrderRepository from "./order.repository";
 
-async function createOrder() {
+async function createOrder(suffixCounter: number) {
   const customerRepository = new CustomerRepository();
-  const customer = new Customer("c1", "Customer 1");
-  const address = new Address("Street 1", 1, "Zipcode 1", "City 1");
+
+  const customer = new Customer(
+    `c-${suffixCounter}`,
+    `Customer ${suffixCounter}`
+  );
+  const address = new Address(
+    `Street ${suffixCounter}`,
+    suffixCounter,
+    `ZipCode ${suffixCounter}`,
+    `City ${suffixCounter}`
+  );
   customer.changeAddress(address);
 
   await customerRepository.create(customer);
 
   const productRepository = new ProductRepository();
-  const product = new Product("p1", "Product 1", 10);
+
+  const product = new Product(
+    `p-${suffixCounter}`,
+    `Product ${suffixCounter}`,
+    10 * suffixCounter
+  );
   await productRepository.create(product);
 
   const orderItem = new OrderItem(
-    "1",
+    `o_i-${suffixCounter}`,
     product.name,
     product.price,
     product.id,
-    2
+    2 * suffixCounter
   );
 
-  const order = new Order("o1", customer.id, [orderItem]);
+  const order = new Order(`o-${suffixCounter}`, customer.id, [orderItem]);
 
   return {
     order,
@@ -66,7 +80,7 @@ describe("Order repository test", () => {
   });
 
   it("should create a new order", async () => {
-    const { order, orderItem } = await createOrder();
+    const { order, orderItem } = await createOrder(1);
 
     const orderRepository = new OrderRepository();
     await orderRepository.create(order);
@@ -93,8 +107,23 @@ describe("Order repository test", () => {
     });
   });
 
+  it("should find all orders", async () => {
+    const orderRepository = new OrderRepository();
+
+    const { order: order1 } = await createOrder(1);
+    await orderRepository.create(order1);
+
+    const { order: order2 } = await createOrder(2);
+    await orderRepository.create(order2);
+
+    const foundOrders = await orderRepository.findAll();
+    const expectedOrders = [order1, order2];
+
+    expect(foundOrders).toStrictEqual(expectedOrders);
+  });
+
   it("should find an order", async () => {
-    const { order } = await createOrder();
+    const { order } = await createOrder(1);
 
     const orderRepository = new OrderRepository();
     await orderRepository.create(order);
