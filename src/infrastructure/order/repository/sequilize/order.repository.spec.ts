@@ -48,8 +48,8 @@ describe("Order repository test", () => {
     });
 
     expect(orderModel.toJSON()).toStrictEqual({
-      id: "123",
-      customer_id: "123",
+      id: order.id,
+      customer_id: order.customerId,
       total: order.total(),
       items: [
         {
@@ -57,8 +57,8 @@ describe("Order repository test", () => {
           name: orderItem.name,
           price: orderItem.price,
           quantity: orderItem.quantity,
-          order_id: "123",
-          product_id: "123",
+          order_id: order.id,
+          product_id: orderItem.productId,
         },
       ],
     });
