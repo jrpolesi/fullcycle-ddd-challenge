@@ -1,6 +1,7 @@
 import SendEmailWhenProductIsCreatedHandler from "../../product/event/handler/send-email-when-product-is-created.handler";
-import ProductCreatedEvent from "../../product/event/product-created.event";
 import EventDispatcher from "./event-dispatcher";
+import EventHandlerInterface from "./event-handler.interface";
+import EventInterface from "./event.interface";
 
 describe("Domain events tests", () => {
   it("should register an event handler", () => {
@@ -59,24 +60,49 @@ describe("Domain events tests", () => {
 
   it("should notify all event handlers", () => {
     const eventDispatcher = new EventDispatcher();
-    const eventHandler = new SendEmailWhenProductIsCreatedHandler();
-    const spyEventHandler = jest.spyOn(eventHandler, "handle");
 
-    eventDispatcher.register("ProductCreatedEvent", eventHandler);
+    const eventHandler1 = new MockEventHandler1();
+    const spyEventHandler1 = jest.spyOn(eventHandler1, "handle");
+    eventDispatcher.register("MockEvent", eventHandler1);
 
-    expect(
-      eventDispatcher.getEventHandlers["ProductCreatedEvent"][0]
-    ).toMatchObject(eventHandler);
+    expect(eventDispatcher.getEventHandlers["MockEvent"][0]).toMatchObject(
+      eventHandler1
+    );
 
-    const productCreatedEvent = new ProductCreatedEvent({
-      name: "Product 1",
-      description: "Product 1 description",
-      price: 10.0,
+    const eventHandler2 = new MockEventHandler2();
+    const spyEventHandler2 = jest.spyOn(eventHandler2, "handle");
+    eventDispatcher.register("MockEvent", eventHandler2);
+
+    expect(eventDispatcher.getEventHandlers["MockEvent"][1]).toMatchObject(
+      eventHandler2
+    );
+
+    const mockEvent = new MockEvent({
+      key1: "value1",
     });
 
     // Quando o notify for executado o SendEmailWhenProductIsCreatedHandler.handle() deve ser chamado
-    eventDispatcher.notify(productCreatedEvent);
+    eventDispatcher.notify(mockEvent);
 
-    expect(spyEventHandler).toHaveBeenCalled();
+    expect(spyEventHandler1).toHaveBeenCalledWith(mockEvent);
+    expect(spyEventHandler2).toHaveBeenCalledWith(mockEvent);
   });
 });
+
+class MockEvent implements EventInterface {
+  dataTimeOccurred: Date;
+  eventData: any;
+
+  constructor(eventData: any) {
+    this.dataTimeOccurred = new Date();
+    this.eventData = eventData;
+  }
+}
+
+class MockEventHandler1 implements EventHandlerInterface {
+  handle(_: EventInterface): void {}
+}
+
+class MockEventHandler2 implements EventHandlerInterface {
+  handle(_: EventInterface): void {}
+}
